@@ -1,0 +1,392 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Ultra Veiculos - tokens
+   A pagina e CLARA. Escuro e vermelho pontuam o ritmo.
+   ============================================================ */
+
+@theme {
+  /* superficie
+     O escuro e PRETO NEUTRO, sem viés azul. Preto puro #000 fecha a sombra
+     e mata a profundidade, entao a base fica um passo acima dele e o footer
+     desce ate o fundo. */
+  --color-fundo: #f7f6f3; /* off-white quente, fundo dominante */
+  --color-carta: #ffffff; /* card sobre o off-white */
+  --color-linha: #e6e3de; /* borda fina e divisoria */
+  --color-escuro: #0a0a0a; /* preto neutro: header, hero, secoes escuras */
+  --color-escuro-2: #161616; /* superficie sobre o preto */
+  --color-breu: #000000; /* fundo do rodape, o ponto mais baixo */
+
+  /* marca */
+  --color-ultra: #e01b24; /* vermelho Ultra, acento e CTA */
+  --color-ultra-claro: #ff3b30; /* so em brilho e hover */
+
+  /* ouro: tres passos, porque metal nao e uma cor chapada. A sombra da
+     volume, o meio e a cor propria, o brilho e o reflexo. */
+  --color-ouro-sombra: #8a5a0b;
+  --color-ouro: #d4a017;
+  --color-ouro-claro: #ffd76a;
+  --color-ouro-brilho: #fff6d6;
+
+  --color-zap: #25d366; /* verde WhatsApp, exclusivo */
+  --color-zap-escuro: #1ab554;
+
+  /* texto */
+  --color-tinta: #171717; /* texto principal no claro */
+  --color-tinta-fraca: #6b6b6b; /* apoio no claro */
+  --color-gelo: #f2f2f2; /* texto principal no escuro */
+  --color-gelo-fraco: #a8a8a8; /* apoio no escuro */
+
+  --font-display: var(--fonte-display), "Arial Narrow", sans-serif;
+  --font-sans: var(--fonte-corpo), system-ui, sans-serif;
+}
+
+/* ============================================================
+   Ouro
+   Metal so parece metal com variacao de luz na superficie: sombra numa
+   ponta, brilho no meio, cor propria no resto. Chapado vira mostarda.
+   Usado em detalhe pequeno (estrela, filete, icone), nunca em area grande
+   nem em texto corrido.
+   ============================================================ */
+
+.ouro {
+  background: linear-gradient(
+    100deg,
+    var(--color-ouro-sombra) 0%,
+    var(--color-ouro) 22%,
+    var(--color-ouro-brilho) 44%,
+    var(--color-ouro-claro) 58%,
+    var(--color-ouro) 78%,
+    var(--color-ouro-sombra) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 30% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Filete de ouro: divisoria fina com o mesmo reflexo. */
+.filete-ouro {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-ouro-sombra) 12%,
+    var(--color-ouro-brilho) 50%,
+    var(--color-ouro-sombra) 88%,
+    transparent 100%
+  );
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-fundo);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+}
+
+/* Respeita quem pediu menos movimento no sistema. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   Assinatura visual: o corte do raio.
+   O hero termina num corte diagonal em angulo agudo, com um fio de luz
+   vermelha na borda. Feito em CSS pra acompanhar qualquer largura de tela
+   sem deformar, em vez de vir queimado dentro da imagem.
+   ============================================================ */
+
+.corte-raio {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 3.5rem), 62% 100%, 0 calc(100% - 2rem));
+}
+
+.fio-raio {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 3.5rem), 62% 100%, 0 calc(100% - 2rem));
+}
+
+@media (max-width: 768px) {
+  .corte-raio,
+  .fio-raio {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.75rem), 62% 100%, 0 calc(100% - 1rem));
+  }
+}
+
+/* Foco visivel de verdade, em tudo que recebe teclado. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-ultra);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================================
+   Movimento
+   Curvas e duracoes seguindo o material do /animate:
+   entrada com ease-out em 200-300ms, saida mais rapida que entrada, e
+   so transform e opacity, que sao as duas propriedades que a GPU anima
+   sem repintar a tela.
+   A regra global de prefers-reduced-motion la em cima desliga tudo isto.
+   ============================================================ */
+
+:root {
+  --saida-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --entra-sai-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --saida-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* Entrada do hero: sobe e aparece, em cascata. */
+@keyframes revelar {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.revela {
+  animation: revelar 500ms var(--saida-quint) both;
+}
+.revela-1 {
+  animation-delay: 90ms;
+}
+.revela-2 {
+  animation-delay: 180ms;
+}
+.revela-3 {
+  animation-delay: 270ms;
+}
+
+/* Botao que responde ao toque. 100ms e o limite pra parecer instantaneo. */
+.btn-toque {
+  transition:
+    background-color 200ms var(--saida-cubic),
+    transform 100ms ease-out;
+}
+.btn-toque:active {
+  transform: scale(0.97);
+}
+
+/*
+   Entrada por rolagem, sem JavaScript nenhum, usando animation-timeline.
+   Fica dentro de @supports de proposito: onde o navegador nao entende
+   (Safari antigo, por exemplo), o bloco inteiro e ignorado e o conteudo
+   aparece normal, sem depender de script pra ficar visivel. Conteudo que
+   so aparece se o JS rodar e conteudo que uma hora some.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .sobe-ao-rolar {
+      animation: revelar 600ms var(--saida-quint) both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 22%;
+    }
+  }
+}
+
+/* ============================================================
+   Botao pulsante do "ver todo o estoque".
+   O pulso e feito com box-shadow, nao com transform: assim ele chama
+   atencao sem empurrar o layout em volta a cada quadro.
+   A regra de prefers-reduced-motion la em cima ja desliga isso pra quem
+   pediu menos movimento no sistema.
+   ============================================================ */
+
+@keyframes pulso-ultra {
+  0% {
+    box-shadow: 0 0 0 0 rgb(224 27 36 / 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgb(224 27 36 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(224 27 36 / 0);
+  }
+}
+
+.botao-pulso {
+  animation: pulso-ultra 2.2s cubic-bezier(0.66, 0, 0, 1) infinite;
+}
+
+.botao-pulso:hover {
+  animation-play-state: paused;
+}
+
+/* ============================================================
+   Carrossel continuo (marquee)
+   A lista e duplicada no HTML e a trilha anda ate -50%. No ponto em que
+   ela reinicia, a segunda copia esta exatamente onde a primeira comecou,
+   entao o loop nao tem emenda visivel.
+   ============================================================ */
+
+@keyframes desliza-esquerda {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee {
+  overflow: hidden;
+  /* Some nas pontas em vez de cortar seco na borda da tela. */
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 6%,
+    black 94%,
+    transparent
+  );
+}
+
+.marquee-trilha {
+  display: flex;
+  width: max-content;
+  animation: desliza-esquerda var(--duracao, 60s) linear infinite;
+}
+
+.marquee:hover .marquee-trilha,
+.marquee:focus-within .marquee-trilha {
+  animation-play-state: paused;
+}
+
+/* Trilha que arrasta pro lado: some com a barra no desktop, mantem o toque
+   natural no celular. */
+.trilha {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.trilha::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card de veiculo: sobe de leve no hover. Transform e box-shadow so, que a
+   GPU resolve sem repintar. */
+.card-sobe {
+  transition:
+    transform 220ms var(--saida-quint),
+    box-shadow 220ms var(--saida-quint);
+}
+@media (hover: hover) {
+  .card-sobe:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 14px 30px rgb(20 20 26 / 0.12);
+  }
+}
+
+/* ============================================================
+   Superficies do navegador
+   Selecao, barra de rolagem e sublinhado saem cinza de fabrica e nao
+   pertencem a design system nenhum. Vestir isso e barato e e o que separa
+   pagina construida de pagina montada.
+   ============================================================ */
+
+::selection {
+  background: var(--color-ultra);
+  color: #fff;
+}
+
+html {
+  scrollbar-color: var(--color-ouro) var(--color-fundo);
+  scrollbar-width: thin;
+  accent-color: var(--color-ultra);
+  caret-color: var(--color-ultra);
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-fundo);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    var(--color-ouro-claro),
+    var(--color-ouro) 45%,
+    var(--color-ouro-sombra)
+  );
+  border-radius: 999px;
+  border: 3px solid var(--color-fundo);
+}
+
+/* Numero de dinheiro em coluna alinha errado com numeral proporcional:
+   o "1" ocupa menos que o "8" e a coluna de preco fica torta. */
+.numeros-tabela {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* O cabecalho e fixo, entao ancora sem folga esconde o titulo da secao atras
+   dele. Esta margem e o que faz "ir pra Avaliacoes" parar no lugar certo. */
+:target,
+section[id] {
+  scroll-margin-top: 6rem;
+}
+
+/* ============================================================
+   Controle de faixa (dois botoes na mesma trilha)
+   O input fica invisivel e so a alca recebe toque: sem isso, o input de cima
+   cobriria o de baixo e uma das alcas nunca poderia ser arrastada.
+   ============================================================ */
+
+.faixa {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  margin: 0;
+}
+
+.faixa::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--color-ultra);
+  box-shadow: 0 1px 4px rgb(20 20 26 / 0.25);
+  cursor: grab;
+}
+.faixa::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.faixa::-moz-range-thumb {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--color-ultra);
+  box-shadow: 0 1px 4px rgb(20 20 26 / 0.25);
+  cursor: grab;
+}
+
+.faixa::-moz-range-track {
+  background: transparent;
+}
+
+.faixa:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-ultra);
+  outline-offset: 2px;
+}

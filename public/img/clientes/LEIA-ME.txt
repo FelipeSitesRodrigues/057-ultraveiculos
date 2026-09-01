@@ -1,0 +1,13 @@
+FOTOS DOS CLIENTES QUE COMPRARAM NA ULTRA
+
+Joga as fotos aqui dentro. O carrossel da home lê esta pasta sozinho,
+nao precisa mexer em codigo nem listar arquivo nenhum.
+
+Formatos aceitos: .webp .jpg .jpeg .png
+A ordem no site segue a ordem alfabetica do nome do arquivo, entao pra
+controlar a ordem e so numerar: 01-joao.webp, 02-maria.webp, e assim por diante.
+
+Se o nome do arquivo tiver o nome da pessoa depois do numero
+(ex: "03-sheila.webp"), esse nome aparece como legenda embaixo da foto.
+
+Foto grande demais nao e problema: o site converte e redimensiona sozinho.
