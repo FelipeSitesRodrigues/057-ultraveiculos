@@ -1,10 +1,18 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { listarVeiculos, type FiltroPainel } from '@/lib/painel'
+import { contarDestaques, listarVeiculos, MAX_DESTAQUES, type FiltroPainel } from '@/lib/painel'
 import { urlDaFoto } from '@/lib/dados'
 import { reais, tituloVeiculo } from '@/lib/formato'
 import { descontoMaximo, diasNoEstoque, lucroPrevisto } from '@/types/database'
 import { STATUS_ROTULO } from '@/lib/opcionais'
+import { alternarDestaque } from '@/app/painel/acoes'
+
+/** Recados do topo, todos vindos de um redirect da ação de destaque. */
+const AVISO_DESTAQUE: Record<string, string> = {
+  cheio: `Você já tem ${MAX_DESTAQUES} carros em destaque, que é o limite da home. Tire um antes de colocar outro.`,
+  'fora-do-ar': 'Só carro publicado pode ir pra home. Coloque o carro no site primeiro.',
+  erro: 'Não deu pra mudar o destaque agora. Tente de novo.',
+}
 
 const FILTROS: { chave: FiltroPainel; rotulo: string }[] = [
   { chave: 'todos', rotulo: 'Todos' },
@@ -28,8 +36,13 @@ export default async function EstoquePainel({ searchParams }: PageProps<'/painel
   const filtro = (typeof sp.filtro === 'string' ? sp.filtro : 'todos') as FiltroPainel
   const busca = typeof sp.busca === 'string' ? sp.busca : ''
   const arquivado = sp.arquivado === '1'
+  const avisoDestaque = typeof sp.destaque === 'string' ? AVISO_DESTAQUE[sp.destaque] : undefined
 
-  const veiculos = await listarVeiculos(filtro, busca)
+  const [veiculos, emDestaque] = await Promise.all([
+    listarVeiculos(filtro, busca),
+    contarDestaques(),
+  ])
+  const lotado = emDestaque >= MAX_DESTAQUES
 
   return (
     <div className="space-y-6">
@@ -38,6 +51,13 @@ export default async function EstoquePainel({ searchParams }: PageProps<'/painel
           <h1 className="font-display text-3xl uppercase text-tinta">Estoque</h1>
           <p className="mt-1 text-tinta-fraca">
             {veiculos.length} {veiculos.length === 1 ? 'carro' : 'carros'} nesta lista
+            <span className="mx-2 text-linha">·</span>
+            <span className={lotado ? 'font-semibold text-ultra' : ''}>
+              <span className="numeros-tabela">
+                {emDestaque} de {MAX_DESTAQUES}
+              </span>{' '}
+              em destaque na home
+            </span>
           </p>
         </div>
         <Link
@@ -54,6 +74,15 @@ export default async function EstoquePainel({ searchParams }: PageProps<'/painel
       {arquivado && (
         <p className="rounded-lg border border-linha bg-carta px-4 py-3 text-sm text-tinta">
           Carro arquivado. Ele saiu do site, mas continua guardado aqui.
+        </p>
+      )}
+
+      {avisoDestaque && (
+        <p
+          role="alert"
+          className="rounded-lg border border-ultra/40 bg-ultra/5 px-4 py-3 text-sm text-tinta"
+        >
+          {avisoDestaque}
         </p>
       )}
 
@@ -207,11 +236,58 @@ export default async function EstoquePainel({ searchParams }: PageProps<'/painel
                       <span>Lucro {lucro !== null ? reais(lucro) : '—'}</span>
                     </div>
 
+                    {/* A caixinha do destaque. Esta SIM precisa de z-index: ela
+                        é o único ponto do cartão que faz algo diferente de
+                        abrir a edição, então tem que ficar ACIMA da camada do
+                        link do título, que cobre o cartão inteiro. */}
+                    <form action={alternarDestaque} className="relative z-10 mt-4">
+                      <input type="hidden" name="id" value={v.id} />
+                      <button
+                        type="submit"
+                        disabled={!v.destaque && (lotado || v.status !== 'publicado')}
+                        aria-pressed={v.destaque}
+                        title={
+                          v.destaque
+                            ? 'Tirar da primeira parte da home'
+                            : v.status !== 'publicado'
+                              ? 'Só carro publicado pode ir pra home'
+                              : lotado
+                                ? `Limite de ${MAX_DESTAQUES} destaques atingido`
+                                : 'Mostrar na primeira parte da home'
+                        }
+                        className={`btn-toque flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                          v.destaque
+                            ? 'border-ultra bg-ultra/10 text-ultra'
+                            : 'border-linha bg-carta text-tinta-fraca hover:border-ultra hover:text-tinta'
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className={`flex size-5 shrink-0 items-center justify-center rounded border-2 ${
+                            v.destaque ? 'border-ultra bg-ultra text-white' : 'border-linha'
+                          }`}
+                        >
+                          {v.destaque && (
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3.5"
+                              className="size-3"
+                            >
+                              <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </span>
+                        Destaque na home
+                      </button>
+                    </form>
+
                     {/* Só marca visual: quem recebe o clique é a camada do
                         link do título, que cobre o cartão inteiro. Se este
                         bloco ficasse por cima (z-index), o clique morreria
                         justamente no botão que parece mais clicável. */}
-                    <span className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-linha px-4 py-2.5 text-sm font-semibold text-tinta transition group-hover:border-ultra group-hover:bg-ultra group-hover:text-white">
+                    <span className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-linha px-4 py-2.5 text-sm font-semibold text-tinta transition group-hover:border-ultra group-hover:bg-ultra group-hover:text-white">
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"

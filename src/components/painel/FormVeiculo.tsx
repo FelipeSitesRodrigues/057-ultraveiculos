@@ -384,7 +384,7 @@ export function FormVeiculo({ veiculo, vendedores }: Props) {
               defaultChecked={veiculo?.destaque}
               className="size-4"
             />
-            Oferta destaque (selo vermelho no card)
+            Destaque: aparece na primeira parte da home (máximo 8)
           </label>
           <label className="flex items-center gap-2.5 text-sm text-tinta">
             <input

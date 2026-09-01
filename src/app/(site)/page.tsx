@@ -72,8 +72,10 @@ export default async function Home() {
   const [config, vendedores, destaques, fotosClientes] = await Promise.all([
     buscarConfig(),
     buscarVendedores(),
-    // Home mostra so uma amostra. O estoque inteiro fica em /veiculos.
-    buscarDestaques(4),
+    // Ate 8 carros: os marcados como destaque no painel vem primeiro, e o
+    // resto completa com os mais novos, pra home nunca nascer vazia nem com
+    // buraco quando o Leandro marcar menos de oito.
+    buscarDestaques(8),
     lerFotosDeClientes(),
   ])
 

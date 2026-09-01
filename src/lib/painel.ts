@@ -145,3 +145,28 @@ export async function resumoDaLoja(): Promise<Resumo> {
     leadsNovos: leadsNovos ?? 0,
   }
 }
+
+/** Limite de carros que podem aparecer na primeira parte da home. */
+export const MAX_DESTAQUES = 8
+
+/**
+ * Quantos slots de destaque estao ocupados AGORA.
+ *
+ * Conta o estoque inteiro, nao a lista filtrada da tela: o limite e global, e
+ * mostrar "3 de 8" com base no filtro aberto faria a conta mudar sozinha
+ * quando a pessoa trocasse de aba.
+ */
+export async function contarDestaques(): Promise<number> {
+  const sb = await criarClienteServidor()
+  const { count, error } = await sb
+    .from('veiculos')
+    .select('id', { count: 'exact', head: true })
+    .eq('destaque', true)
+    .eq('status', 'publicado')
+
+  if (error) {
+    console.error('contarDestaques', error.message)
+    return 0
+  }
+  return count ?? 0
+}

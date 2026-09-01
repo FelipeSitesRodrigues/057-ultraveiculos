@@ -117,6 +117,20 @@ function lerFormulario(fd: FormData) {
   })
 }
 
+/**
+ * Traduz o erro cru do banco pro que a pessoa precisa fazer.
+ *
+ * O trigger `veiculos_limita_destaques` levanta a palavra `limite_destaques`.
+ * Sem isto, o Leandro veria "Nao foi possivel salvar: limite_destaques" e nao
+ * teria como adivinhar que precisa desmarcar outro carro.
+ */
+function mensagemDoBanco(bruta: string): string {
+  if (bruta.includes('limite_destaques')) {
+    return 'Você já tem 8 carros em destaque, que é o limite da home. Tire o destaque de outro carro antes de marcar este.'
+  }
+  return bruta
+}
+
 /** Sufixo curto pro slug nunca colidir entre dois carros iguais. */
 function sufixo(): string {
   return Math.random().toString(36).slice(2, 6)
@@ -161,7 +175,7 @@ export async function salvarVeiculo(
       .eq('id', id)
       .select('id, slug')
       .single()
-    if (error) return { erro: `Não foi possível salvar: ${error.message}` }
+    if (error) return { erro: `Não foi possível salvar: ${mensagemDoBanco(error.message)}` }
     veiculoId = data.id
     slug = data.slug
   } else {
@@ -171,7 +185,7 @@ export async function salvarVeiculo(
       .insert({ ...campos, slug, criado_por: sessao.userId })
       .select('id, slug')
       .single()
-    if (error) return { erro: `Não foi possível cadastrar: ${error.message}` }
+    if (error) return { erro: `Não foi possível cadastrar: ${mensagemDoBanco(error.message)}` }
     veiculoId = data.id
   }
 
@@ -329,6 +343,53 @@ export async function arquivarVeiculo(formData: FormData) {
   await sb.from('veiculos').update({ status: 'arquivado' }).eq('id', id)
   limpaCache()
   redirect('/painel/veiculos?arquivado=1')
+}
+
+/**
+ * Liga e desliga o destaque direto da lista do estoque, sem abrir o carro.
+ *
+ * Le o valor atual no banco em vez de receber o novo do formulario: assim dois
+ * cliques rapidos no mesmo cartao nao gravam o mesmo valor duas vezes, e um
+ * formulario forjado nao consegue ligar destaque num carro que nao devia.
+ *
+ * O limite de 8 e do banco (trigger `veiculos_limita_destaques`), nao daqui.
+ * Contar antes de gravar seria uma checagem que duas pessoas clicando ao mesmo
+ * tempo furariam.
+ */
+export async function alternarDestaque(formData: FormData) {
+  await exigirEquipe()
+  const sb = await criarClienteServidor()
+
+  const id = texto(formData.get('id'))
+  if (!id) return
+
+  const { data: atual } = await sb
+    .from('veiculos')
+    .select('destaque, status')
+    .eq('id', id)
+    .single()
+  if (!atual) return
+
+  // Carro fora do ar nao tem o que destacar: o trigger zeraria de novo e o
+  // clique pareceria não ter feito nada.
+  if (atual.status !== 'publicado' && !atual.destaque) {
+    redirect('/painel/veiculos?destaque=fora-do-ar')
+  }
+
+  const { error } = await sb
+    .from('veiculos')
+    .update({ destaque: !atual.destaque })
+    .eq('id', id)
+
+  if (error) {
+    if (error.message.includes('limite_destaques')) {
+      redirect('/painel/veiculos?destaque=cheio')
+    }
+    redirect('/painel/veiculos?destaque=erro')
+  }
+
+  limpaCache()
+  revalidatePath('/painel')
 }
 
 export async function mudarStatus(formData: FormData) {
