@@ -11,14 +11,32 @@ const SUPABASE_HOST = new URL(
  * que nao esta aqui.
  *
  * 'unsafe-inline' em style-src e necessario pro Tailwind e pros estilos que o
- * Next injeta. Em script-src ele NAO entra.
+ * Next injeta.
+ *
+ * 'unsafe-inline' TAMBEM em script-src, e isso e uma concessao consciente.
+ * O Next entrega a hidratacao do React em scripts INLINE (8 deles nesta
+ * pagina). Sem 'unsafe-inline' o navegador bloqueia todos, o React nunca
+ * hidrata e o site vira uma foto: galeria nao anda, filtro nao filtra, busca
+ * nao abre. Foi exatamente o que aconteceu no primeiro deploy.
+ *
+ * A alternativa correta e nonce por request, gerado no proxy.ts. Ela NAO cabe
+ * aqui sem trocar a arquitetura: nonce exige renderizacao dinamica (a doc do
+ * Next e explicita), e estas paginas sao estaticas com ISR de proposito, que e
+ * o que segura o tempo de resposta das paginas que recebem trafego pago.
+ *
+ * O que sustenta a decisao: NAO existe dangerouslySetInnerHTML neste projeto e
+ * nao ha script de terceiros, entao todo texto passa pelo escape do React. E o
+ * resto da politica continua valendo, que e o que importa depois de um XSS:
+ * script de fora nao carrega ('self'), a pagina so fala com o Supabase
+ * (connect-src), nao pode ser embutida em iframe e nao envia formulario pra
+ * fora.
  */
 const csp = [
   "default-src 'self'",
   // 'unsafe-eval' so em dev, pro hot reload do Turbopack
   process.env.NODE_ENV === 'development'
     ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
-    : "script-src 'self'",
+    : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https://${SUPABASE_HOST}`,
   "font-src 'self' data:",
