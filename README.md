@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ultra Veículos
 
-## Getting Started
+Site e painel da Ultra Veículos, revenda de seminovos em Suzano (SP).
 
-First, run the development server:
+Next 16 (App Router, Turbopack) + Supabase (Postgres, Auth e Storage) + Tailwind 4.
+
+- **Site público:** home, catálogo com filtros, página do veículo, venda/consignação
+- **Painel** (`/painel`): estoque, cadastro e edição de carro com fotos, banner, contatos
+
+## Rodar na máquina
+
+```bash
+npm install
+cp .env.example .env.local   # e preencha as duas variáveis
+npm run dev
+```
+
+Abre em http://localhost:3000. O painel fica em `/painel`, com login em `/entrar`.
+
+## Variáveis de ambiente
+
+São só duas, e as duas são `NEXT_PUBLIC` **por design**: elas viajam pro
+navegador. A segurança do projeto está nas policies de RLS do banco, não em
+esconder a chave. **Não existe `SERVICE_ROLE_KEY` neste projeto**; se um dia
+parecer que precisa dela, o desenho está errado.
+
+| Variável | Onde achar |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase > Project Settings > Data API > Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase > Project Settings > API Keys > `anon` `public` |
+
+> **As duas são lidas em tempo de BUILD**, não só em execução: o
+> `next.config.ts` monta a Content-Security-Policy e o `images.remotePatterns`
+> a partir do host do Supabase. Sem elas, o build cai num host de exemplo e o
+> navegador passa a **bloquear** as fotos dos carros e as chamadas ao banco.
+> Por isso, mudar essas variáveis exige **redeploy**, não basta salvar.
+
+## Deploy na Vercel
+
+1. Vercel > **Add New > Project** > importar `FelipeSitesRodrigues/057-ultraveiculos`
+2. **Root Directory:** deixar na raiz. O repositório já é a pasta do site.
+3. **Framework Preset:** Next.js (a Vercel detecta sozinha). Build e install ficam no padrão.
+4. **Environment Variables:** colar o conteúdo do `.env.local` inteiro no campo
+   (a Vercel aceita colar um arquivo `.env` de uma vez e separa as duas).
+   Marcar Production, Preview e Development.
+5. **Deploy.** A partir daí, todo push na `main` publica sozinho.
+
+Depois de subir:
+
+- **Domínio:** o `metadataBase` vem de `SITE.url` em `src/lib/site.ts`, hoje
+  apontando pra `https://ultraveiculos.com.br`. Se o domínio final for outro,
+  mudar lá **antes** de divulgar, senão as URLs canônicas que o Google lê vão
+  apontar pro lugar errado.
+- **Supabase > Authentication > URL Configuration:** incluir o domínio novo.
+
+## Banco
+
+As migrations vivem em `supabase/migrations/`. Depois de mexer em qualquer
+policy, rodar a bateria de RLS:
+
+```bash
+bash scripts/teste-rls.sh
+```
+
+São 12 testes: conferem que o visitante não lê custo nem contato, não escreve
+em nada, e que `registrar_lead` recusa entrada inválida.
+
+> Migration que **apaga** dado precisa de trava por data
+> (`criado_em < '...'`), que a torne inofensiva fora do dia em que foi escrita.
+> Migration roda de novo em qualquer banco novo, e um `delete` com critério
+> largo apagaria carro real da loja.
+
+## Revisão visual
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+node scripts/revisar.mjs / /veiculos /venda-seu-carro
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Abre o Edge via puppeteer-core em 4 viewports (390, 768, 1440 e 1920x720) e
+checa overflow horizontal, erro de console, imagem sem alt e vazamento de dado
+financeiro no HTML. Os prints saem em `../revisao/`.
