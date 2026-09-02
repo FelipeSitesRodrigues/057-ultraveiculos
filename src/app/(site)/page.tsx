@@ -144,7 +144,7 @@ export default async function Home() {
       <CarrosselClientes fotos={fotosClientes} />
 
       {/* 04 claro: avaliacoes do Google */}
-      <Avaliacoes google={config.google} />
+      <Avaliacoes />
 
       {/* 05 escuro: diferenciais */}
       <section aria-label="Por que comprar na Ultra" className="bg-escuro">

@@ -2,7 +2,6 @@
 
 import { useRef } from 'react'
 import { AVALIACOES } from '@/lib/avaliacoes'
-import type { ConfigGoogle } from '@/lib/dados'
 
 /** Logo oficial do Google, nas quatro cores. */
 function LogoGoogle({ className = 'size-8' }: { className?: string }) {
@@ -28,6 +27,55 @@ function LogoGoogle({ className = 'size-8' }: { className?: string }) {
   )
 }
 
+/** O degrade fica no documento uma vez so: id repetido e HTML invalido. */
+function DegradeOuro() {
+  return (
+    <svg width="0" height="0" aria-hidden className="absolute">
+      <defs>
+        <linearGradient id="ouro-estrela" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-ouro-claro)" />
+          <stop offset="45%" stopColor="var(--color-ouro)" />
+          <stop offset="100%" stopColor="var(--color-ouro-sombra)" />
+        </linearGradient>
+      </defs>
+    </svg>
+  )
+}
+
+/**
+ * As cinco estrelas da secao.
+ *
+ * SVG e nao o caractere ★: no tamanho grande que o cliente pediu, o glifo sai
+ * fino, com desenho diferente em cada fonte e espacamento irregular. Em SVG o
+ * desenho e sempre o mesmo e a cor e controlada.
+ *
+ * O ouro e um degrade VERTICAL (claro em cima, escuro embaixo) e nao o
+ * `.ouro` do resto do site, que tem um brilho quase branco no meio: sobre o
+ * fundo off-white desta secao, aquele brilho sumiria justo no miolo da estrela
+ * e o efeito seria o contrario do pedido. Aqui a maior parte da estrela fica
+ * nos tons escuros do ouro, que e o que da contraste contra o claro.
+ *
+ * Sem texto alternativo de proposito: o titulo ao lado ja diz o que as
+ * estrelas significam, e um rotulo aqui repetiria a mesma frase pra quem usa
+ * leitor de tela.
+ */
+function CincoEstrelas({ className = '', tamanho = 'size-7 lg:size-8' }) {
+  return (
+    <span aria-hidden className={`flex gap-1 ${className}`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <svg
+          key={i}
+          viewBox="0 0 24 24"
+          fill="url(#ouro-estrela)"
+          className={`${tamanho} drop-shadow-[0_1px_1px_rgb(0_0_0_/_0.18)]`}
+        >
+          <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        </svg>
+      ))}
+    </span>
+  )
+}
+
 function Seta({ direita = false }: { direita?: boolean }) {
   return (
     <svg
@@ -43,9 +91,8 @@ function Seta({ direita = false }: { direita?: boolean }) {
   )
 }
 
-export function Avaliacoes({ google }: { google: ConfigGoogle }) {
+export function Avaliacoes() {
   const trilha = useRef<HTMLUListElement>(null)
-  const nota = google.nota.toString().replace('.', ',')
 
   const rolar = (dir: 1 | -1) => {
     const el = trilha.current
@@ -57,6 +104,7 @@ export function Avaliacoes({ google }: { google: ConfigGoogle }) {
 
   return (
     <section id="avaliacoes" aria-labelledby="titulo-avaliacoes" className="bg-fundo py-12 lg:py-16">
+      <DegradeOuro />
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -68,13 +116,7 @@ export function Avaliacoes({ google }: { google: ConfigGoogle }) {
               >
                 A loja mais bem avaliada da <span className="text-ultra">região</span>.
               </h2>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-tinta-fraca">
-                <span className="font-display text-lg text-tinta">{nota}</span>
-                <span aria-hidden className="ouro">
-                  ★★★★★
-                </span>
-                <span>{google.avaliacoes} avaliações no Google</span>
-              </p>
+              <CincoEstrelas className="mt-2" />
             </div>
           </div>
 
@@ -112,9 +154,7 @@ export function Avaliacoes({ google }: { google: ConfigGoogle }) {
           >
             <figure className="flex h-full flex-col rounded-2xl border border-linha bg-carta p-6">
               <div className="flex items-center justify-between gap-3">
-                <span aria-hidden className="ouro text-sm">
-                  ★★★★★
-                </span>
+                <CincoEstrelas tamanho="size-4" />
                 <LogoGoogle className="size-5 opacity-70" />
               </div>
 
