@@ -386,15 +386,6 @@ export function FormVeiculo({ veiculo, vendedores }: Props) {
             />
             Destaque: aparece na primeira parte da home (máximo 8)
           </label>
-          <label className="flex items-center gap-2.5 text-sm text-tinta">
-            <input
-              type="checkbox"
-              name="premium"
-              defaultChecked={veiculo?.premium}
-              className="size-4"
-            />
-            Carro premium
-          </label>
         </div>
 
         <div className="mt-5">
