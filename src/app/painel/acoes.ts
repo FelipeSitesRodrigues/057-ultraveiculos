@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { criarClienteServidor, sessaoDaEquipe } from '@/lib/supabase/servidor'
 import { gerarSlug } from '@/lib/formato'
+import { CHAVE_CONFIG as CHAVE_FOTOS_CLIENTES } from '@/lib/fotos-clientes'
 
 /**
  * Toda escrita do sistema passa por aqui.
@@ -453,4 +454,54 @@ export async function salvarBanner(
   revalidatePath('/veiculos')
   revalidatePath('/painel/banner')
   redirect('/painel/banner?salvo=1')
+}
+
+/**
+ * Liga e desliga o espelho de uma foto do carrossel de clientes.
+ *
+ * O arquivo na pasta nunca e tocado: o que muda e a lista de nomes na chave
+ * `fotos_clientes` da config, e o site aplica o scaleX(-1) na hora de mostrar.
+ * Por isso desmarcar devolve a foto original de graca, quantas vezes o Pietro
+ * quiser, sem degradar a imagem a cada rodada.
+ *
+ * A leitura vem antes da escrita porque a lista e um jsonb inteiro, nao uma
+ * coluna por foto. Duas pessoas marcando fotos diferentes no mesmo segundo
+ * fariam a ultima vencer. Aqui isso e aceitavel: sao dois usuarios no painel e
+ * a correcao e outro clique.
+ */
+export async function alternarEspelhoCliente(formData: FormData) {
+  await exigirEquipe()
+  const sb = await criarClienteServidor()
+
+  const arquivo = texto(formData.get('arquivo'))
+  if (!arquivo) return
+
+  const { data } = await sb
+    .from('config')
+    .select('valor')
+    .eq('chave', CHAVE_FOTOS_CLIENTES)
+    .maybeSingle()
+
+  const atual = (data?.valor as { espelhadas?: unknown } | null)?.espelhadas
+  const lista = Array.isArray(atual)
+    ? atual.filter((a): a is string => typeof a === 'string')
+    : []
+
+  const espelhadas = lista.includes(arquivo)
+    ? lista.filter((a) => a !== arquivo)
+    : [...lista, arquivo]
+
+  const { error } = await sb
+    .from('config')
+    .upsert(
+      { chave: CHAVE_FOTOS_CLIENTES, valor: { espelhadas }, publica: true },
+      { onConflict: 'chave' },
+    )
+
+  if (error) redirect('/painel/clientes?erro=1')
+
+  // A home e ISR de 5 minutos: sem isto o Pietro clica, olha o site e acha
+  // que nao funcionou.
+  revalidatePath('/')
+  revalidatePath('/painel/clientes')
 }

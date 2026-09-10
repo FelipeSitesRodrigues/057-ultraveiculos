@@ -1,13 +1,44 @@
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
+import { criarClientePublico } from '@/lib/supabase/publico'
 
 export type FotoCliente = {
   src: string
+  /** Nome do arquivo. E a chave que o painel usa pra marcar o espelho. */
+  arquivo: string
   nome: string | null
   alt: string
+  /** Exibir invertida horizontalmente, pra o carro apontar pro mesmo lado das outras. */
+  espelhada: boolean
 }
 
 const EXTENSOES = new Set(['.webp', '.jpg', '.jpeg', '.png', '.avif'])
+
+/** Chave da tabela `config` onde fica a lista de arquivos espelhados. */
+export const CHAVE_CONFIG = 'fotos_clientes'
+
+/**
+ * Quais fotos o site mostra invertidas.
+ *
+ * O espelho e estado no banco, nao edicao de arquivo: assim o Pietro marca e
+ * desmarca no painel sem perder qualidade e sem inverter de vez o logo da
+ * plaquinha da Ultra quando ela aparece na foto.
+ *
+ * Se o banco estiver fora do ar, ninguem espelha e o carrossel aparece do
+ * mesmo jeito. Foto torta e menos grave que secao vazia.
+ */
+export async function lerEspelhadas(): Promise<Set<string>> {
+  const sb = criarClientePublico()
+  const { data } = await sb
+    .from('config')
+    .select('valor')
+    .eq('chave', CHAVE_CONFIG)
+    .maybeSingle()
+
+  const lista = (data?.valor as { espelhadas?: unknown } | null)?.espelhadas
+  if (!Array.isArray(lista)) return new Set()
+  return new Set(lista.filter((a): a is string => typeof a === 'string'))
+}
 
 /**
  * Le `public/img/clientes` e devolve as fotos na ordem alfabetica do arquivo.
@@ -29,6 +60,8 @@ export async function lerFotosDeClientes(): Promise<FotoCliente[]> {
     return []
   }
 
+  const espelhadas = await lerEspelhadas()
+
   return arquivos
     .filter((a) => EXTENSOES.has(path.extname(a).toLowerCase()))
     .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }))
@@ -45,10 +78,12 @@ export async function lerFotosDeClientes(): Promise<FotoCliente[]> {
 
       return {
         src: `/img/clientes/${arquivo}`,
+        arquivo,
         nome,
         alt: nome
           ? `${nome}, cliente da Ultra Veículos, com o carro que comprou na loja`
           : 'Cliente da Ultra Veículos com o carro que comprou na loja',
+        espelhada: espelhadas.has(arquivo),
       }
     })
 }

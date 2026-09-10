@@ -18,6 +18,7 @@ const ABAS = [
   { href: '/painel/veiculos', rotulo: 'Estoque' },
   { href: '/painel/leads', rotulo: 'Contatos' },
   { href: '/painel/banner', rotulo: 'Banner' },
+  { href: '/painel/clientes', rotulo: 'Fotos de clientes' },
 ] as const
 
 export default async function LayoutPainel({ children }: LayoutProps<'/painel'>) {

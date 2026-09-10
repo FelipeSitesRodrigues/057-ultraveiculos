@@ -53,6 +53,12 @@ export function CarrosselClientes({ fotos }: { fotos: FotoCliente[] }) {
                     A copia duplicada fica lazy porque reusa o mesmo arquivo,
                     que a essa altura ja esta em cache.
                   */}
+                  {/*
+                    Espelho por CSS, marcado pelo painel. E so exibicao: o
+                    arquivo na pasta continua o original, entao desmarcar
+                    devolve a foto como ela e, sem perder qualidade e sem
+                    deixar o logo da plaquinha da Ultra invertido pra sempre.
+                  */}
                   <Image
                     src={f.src}
                     alt={i >= fotos.length ? '' : f.alt}
@@ -60,7 +66,7 @@ export function CarrosselClientes({ fotos }: { fotos: FotoCliente[] }) {
                     sizes="(max-width: 1024px) 220px, 280px"
                     loading={i < fotos.length ? 'eager' : 'lazy'}
                     fetchPriority="low"
-                    className="object-cover"
+                    className={`object-cover ${f.espelhada ? '-scale-x-100' : ''}`}
                   />
                 </div>
                 {f.nome && (
