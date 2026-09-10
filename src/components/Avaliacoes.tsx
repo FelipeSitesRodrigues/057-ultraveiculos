@@ -164,17 +164,6 @@ export function Avaliacoes() {
 
               <figcaption className="mt-5 border-t border-linha pt-4">
                 <p className="font-display text-sm uppercase text-tinta">{a.nome}</p>
-                <p className="text-xs text-tinta-fraca">
-                  {a.quando}
-                  {a.vendedor && (
-                    <>
-                      <span className="mx-1.5" aria-hidden>
-                        ·
-                      </span>
-                      atendido por {a.vendedor}
-                    </>
-                  )}
-                </p>
               </figcaption>
             </figure>
           </li>

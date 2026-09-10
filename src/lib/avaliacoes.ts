@@ -10,8 +10,14 @@
 
 export type Avaliacao = {
   nome: string
-  quando: string
   texto: string
+  /**
+   * quando e vendedor continuam gravados aqui como registro da coleta, mas
+   * nao aparecem mais no cartao: o Pietro pediu em 2026-09-10 pra tirar o
+   * tempo da avaliacao e o nome de quem atendeu. Se ele mudar de ideia, o
+   * dado ja esta aqui e so precisa voltar pro figcaption de Avaliacoes.tsx.
+   */
+  quando: string
   vendedor?: string
 }
 
