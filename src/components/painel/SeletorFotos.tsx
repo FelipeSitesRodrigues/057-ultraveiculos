@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { criarClienteNavegador } from '@/lib/supabase/navegador'
+import { prepararImagem } from '@/lib/imagem-navegador'
 
 /**
  * Escolha, ordem e envio das fotos.
@@ -28,33 +29,6 @@ type Item = {
   estado: 'esperando' | 'enviando' | 'pronto' | 'erro'
   caminho?: string
   erro?: string
-}
-
-/** Redimensiona e converte pra webp usando o canvas do proprio navegador. */
-async function prepararImagem(arquivo: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(arquivo)
-
-  const escala = Math.min(
-    1,
-    LARGURA_MAX / bitmap.width,
-    ALTURA_MAX / bitmap.height,
-  )
-  const largura = Math.round(bitmap.width * escala)
-  const altura = Math.round(bitmap.height * escala)
-
-  const canvas = document.createElement('canvas')
-  canvas.width = largura
-  canvas.height = altura
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('canvas indisponível')
-  ctx.drawImage(bitmap, 0, 0, largura, altura)
-  bitmap.close()
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/webp', 0.82),
-  )
-  if (!blob) throw new Error('não consegui converter a imagem')
-  return blob
 }
 
 export function SeletorFotos({ nome = 'fotos_caminhos' }: { nome?: string }) {
@@ -84,7 +58,7 @@ export function SeletorFotos({ nome = 'fotos_caminhos' }: { nome?: string }) {
       setItens((a) => [...a, { id, nome: arquivo.name, previa, estado: 'enviando' }])
 
       try {
-        const blob = await prepararImagem(arquivo)
+        const blob = await prepararImagem(arquivo, LARGURA_MAX, ALTURA_MAX)
         const caminho = `lote/${loteRef.current}/${Date.now()}-${Math.random()
           .toString(36)
           .slice(2, 8)}.webp`

@@ -1,12 +1,10 @@
 import Link from 'next/link'
 import { resumoDaLoja, listarVeiculos, listarVendedoresPainel } from '@/lib/painel'
-import { sessaoDaEquipe } from '@/lib/supabase/servidor'
 import { reais, tituloVeiculo } from '@/lib/formato'
 import { diasNoEstoque } from '@/types/database'
 
 export default async function VisaoGeral() {
-  const [sessao, resumo, parados, vendedores] = await Promise.all([
-    sessaoDaEquipe(),
+  const [resumo, parados, vendedores] = await Promise.all([
     resumoDaLoja(),
     listarVeiculos('girar'),
     listarVendedoresPainel(),
@@ -40,7 +38,7 @@ export default async function VisaoGeral() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-3xl uppercase text-tinta">
-          Olá, {sessao?.nome}
+          Olá, Ultra Veículos
         </h1>
         <p className="mt-1 text-tinta-fraca">Visão geral do estoque e das vendas.</p>
       </div>

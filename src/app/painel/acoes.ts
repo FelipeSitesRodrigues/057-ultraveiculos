@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { criarClienteServidor, sessaoDaEquipe } from '@/lib/supabase/servidor'
 import { gerarSlug } from '@/lib/formato'
-import { CHAVE_CONFIG as CHAVE_FOTOS_CLIENTES } from '@/lib/fotos-clientes'
 
 /**
  * Toda escrita do sistema passa por aqui.
@@ -456,52 +455,142 @@ export async function salvarBanner(
   redirect('/painel/banner?salvo=1')
 }
 
+/*
+ * Fotos de cliente (carrossel "Quem ja e da Ultra")
+ *
+ * O arquivo sobe do navegador direto pro bucket `clientes`, pelo mesmo motivo
+ * das fotos de veiculo (limite de corpo da Server Action e da Vercel). Aqui so
+ * chegam caminhos e ids.
+ *
+ * Toda acao revalida a home: ela e ISR de 5 minutos, e sem isto o Pietro mexe,
+ * abre o site e acha que nao funcionou.
+ */
+
+function atualizaFotosClientes() {
+  revalidatePath('/')
+  revalidatePath('/painel/clientes')
+}
+
+// So aceita o formato que o proprio painel gera. Impede que alguem com sessao
+// aponte a linha pra arquivo de outro bucket ou pra fora da pasta.
+const EsquemaCaminhosCliente = z
+  .array(z.string().regex(/^painel\/[\w-]+\.webp$/))
+  .min(1)
+  .max(30)
+
+export async function adicionarFotosClientes(
+  caminhos: string[],
+): Promise<{ erro?: string }> {
+  await exigirEquipe()
+  const sb = await criarClienteServidor()
+
+  const validos = EsquemaCaminhosCliente.safeParse(caminhos)
+  if (!validos.success) return { erro: 'Envio inválido. Escolha as fotos de novo.' }
+
+  // Foto nova entra no fim da fila. Quem quiser ela na frente, move.
+  const { data: ultima } = await sb
+    .from('fotos_clientes')
+    .select('ordem')
+    .order('ordem', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const base = (ultima?.ordem ?? 0) + 1
+
+  const { error } = await sb
+    .from('fotos_clientes')
+    .insert(validos.data.map((path, i) => ({ path, ordem: base + i })))
+
+  if (error) {
+    // Sem linha no banco o arquivo nao aparece em lugar nenhum: apaga pra nao
+    // ficar lixo ocupando o bucket.
+    await sb.storage.from('clientes').remove(validos.data)
+    return { erro: `Não foi possível salvar: ${error.message}` }
+  }
+
+  atualizaFotosClientes()
+  return {}
+}
+
 /**
- * Liga e desliga o espelho de uma foto do carrossel de clientes.
- *
- * O arquivo na pasta nunca e tocado: o que muda e a lista de nomes na chave
- * `fotos_clientes` da config, e o site aplica o scaleX(-1) na hora de mostrar.
- * Por isso desmarcar devolve a foto original de graca, quantas vezes o Pietro
- * quiser, sem degradar a imagem a cada rodada.
- *
- * A leitura vem antes da escrita porque a lista e um jsonb inteiro, nao uma
- * coluna por foto. Duas pessoas marcando fotos diferentes no mesmo segundo
- * fariam a ultima vencer. Aqui isso e aceitavel: sao dois usuarios no painel e
- * a correcao e outro clique.
+ * Liga e desliga o espelho. O arquivo nunca e tocado: o site aplica
+ * scaleX(-1) na hora de mostrar, entao desfazer devolve a foto original.
  */
 export async function alternarEspelhoCliente(formData: FormData) {
   await exigirEquipe()
   const sb = await criarClienteServidor()
 
-  const arquivo = texto(formData.get('arquivo'))
-  if (!arquivo) return
+  const id = texto(formData.get('id'))
+  if (!id) return
 
-  const { data } = await sb
-    .from('config')
-    .select('valor')
-    .eq('chave', CHAVE_FOTOS_CLIENTES)
-    .maybeSingle()
-
-  const atual = (data?.valor as { espelhadas?: unknown } | null)?.espelhadas
-  const lista = Array.isArray(atual)
-    ? atual.filter((a): a is string => typeof a === 'string')
-    : []
-
-  const espelhadas = lista.includes(arquivo)
-    ? lista.filter((a) => a !== arquivo)
-    : [...lista, arquivo]
+  const { data: atual } = await sb
+    .from('fotos_clientes')
+    .select('espelhada')
+    .eq('id', id)
+    .single()
+  if (!atual) return
 
   const { error } = await sb
-    .from('config')
-    .upsert(
-      { chave: CHAVE_FOTOS_CLIENTES, valor: { espelhadas }, publica: true },
-      { onConflict: 'chave' },
-    )
-
+    .from('fotos_clientes')
+    .update({ espelhada: !atual.espelhada })
+    .eq('id', id)
   if (error) redirect('/painel/clientes?erro=1')
 
-  // A home e ISR de 5 minutos: sem isto o Pietro clica, olha o site e acha
-  // que nao funcionou.
-  revalidatePath('/')
-  revalidatePath('/painel/clientes')
+  atualizaFotosClientes()
+}
+
+/**
+ * Troca a foto de lugar com a vizinha. Duas escritas e nao uma transacao:
+ * se a segunda falhar, as duas ficam com a mesma ordem e o desempate por data
+ * mantem a lista estavel. O proximo clique corrige.
+ */
+export async function moverFotoCliente(formData: FormData) {
+  await exigirEquipe()
+  const sb = await criarClienteServidor()
+
+  const id = texto(formData.get('id'))
+  const direcao = texto(formData.get('direcao'))
+  if (!id || (direcao !== 'antes' && direcao !== 'depois')) return
+
+  const { data: lista } = await sb
+    .from('fotos_clientes')
+    .select('id, ordem')
+    .order('ordem')
+    .order('criado_em')
+  if (!lista) return
+
+  const i = lista.findIndex((f) => f.id === id)
+  const j = direcao === 'antes' ? i - 1 : i + 1
+  if (i < 0 || j < 0 || j >= lista.length) return
+
+  // Usa a posicao na lista e nao a ordem gravada: se duas fotos tiverem a
+  // mesma ordem, trocar os valores nao mudaria nada na tela.
+  const { error: e1 } = await sb.from('fotos_clientes').update({ ordem: j }).eq('id', lista[i].id)
+  const { error: e2 } = await sb.from('fotos_clientes').update({ ordem: i }).eq('id', lista[j].id)
+  if (e1 || e2) redirect('/painel/clientes?erro=1')
+
+  atualizaFotosClientes()
+}
+
+export async function removerFotoCliente(formData: FormData) {
+  await exigirEquipe()
+  const sb = await criarClienteServidor()
+
+  const id = texto(formData.get('id'))
+  if (!id) return
+
+  const { data: foto } = await sb
+    .from('fotos_clientes')
+    .select('path')
+    .eq('id', id)
+    .single()
+  if (!foto) return
+
+  // Primeiro a linha, depois o arquivo: se o Storage falhar, a foto ja saiu do
+  // site, que e o que o Pietro pediu. Arquivo orfao e so espaco.
+  const { error } = await sb.from('fotos_clientes').delete().eq('id', id)
+  if (error) redirect('/painel/clientes?erro=1')
+
+  await sb.storage.from('clientes').remove([foto.path])
+
+  atualizaFotosClientes()
 }

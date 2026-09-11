@@ -73,7 +73,7 @@ export const MARCAS = [
 ] as const
 
 export const CARROCERIAS = [
-  'Hatch', 'Sedã', 'SUV', 'Picape', 'Minivan', 'Utilitário', 'Cupê',
+  'Hatch', 'Sedã', 'SUV', 'SUV médio', 'Picape', 'Minivan', 'Utilitário', 'Cupê',
   'Conversível', 'Perua', 'Moto',
 ] as const
 

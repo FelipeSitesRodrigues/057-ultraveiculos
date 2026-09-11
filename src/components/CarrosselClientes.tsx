@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import type { FotoCliente } from '@/lib/fotos-clientes'
 
+const ALT = 'Cliente da Ultra Veículos com o carro que comprou na loja'
+
 /**
  * Carrossel continuo com as fotos de quem comprou na loja.
  *
@@ -38,7 +40,7 @@ export function CarrosselClientes({ fotos }: { fotos: FotoCliente[] }) {
         <ul className="marquee-trilha gap-4 lg:gap-6">
           {[...fotos, ...fotos].map((f, i) => (
             <li
-              key={`${f.src}-${i}`}
+              key={`${f.id}-${i}`}
               aria-hidden={i >= fotos.length}
               className="w-[220px] shrink-0 lg:w-[280px]"
             >
@@ -52,16 +54,13 @@ export function CarrosselClientes({ fotos }: { fotos: FotoCliente[] }) {
                     Prioridade baixa pra nao competir com a foto do hero.
                     A copia duplicada fica lazy porque reusa o mesmo arquivo,
                     que a essa altura ja esta em cache.
-                  */}
-                  {/*
-                    Espelho por CSS, marcado pelo painel. E so exibicao: o
-                    arquivo na pasta continua o original, entao desmarcar
-                    devolve a foto como ela e, sem perder qualidade e sem
-                    deixar o logo da plaquinha da Ultra invertido pra sempre.
+
+                    O espelho vem do painel e e so CSS: o arquivo no bucket
+                    continua o original.
                   */}
                   <Image
                     src={f.src}
-                    alt={i >= fotos.length ? '' : f.alt}
+                    alt={i >= fotos.length ? '' : ALT}
                     fill
                     sizes="(max-width: 1024px) 220px, 280px"
                     loading={i < fotos.length ? 'eager' : 'lazy'}
@@ -69,15 +68,6 @@ export function CarrosselClientes({ fotos }: { fotos: FotoCliente[] }) {
                     className={`object-cover ${f.espelhada ? '-scale-x-100' : ''}`}
                   />
                 </div>
-                {f.nome && (
-                  <figcaption className="px-4 py-3 text-sm text-gelo-fraco">
-                    <span className="text-gelo">{f.nome}</span>
-                    <span className="mx-1.5" aria-hidden>
-                      ·
-                    </span>
-                    cliente Ultra
-                  </figcaption>
-                )}
               </figure>
             </li>
           ))}

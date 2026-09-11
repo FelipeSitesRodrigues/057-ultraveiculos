@@ -105,7 +105,10 @@ export async function buscarCatalogo(filtros: FiltrosCatalogo = {}): Promise<{
   if (filtros.marcas?.length) q = q.in('marca', filtros.marcas)
   if (filtros.cambio) q = q.eq('cambio', filtros.cambio)
   if (filtros.combustivel) q = q.eq('combustivel', filtros.combustivel)
-  if (filtros.carroceria) q = q.eq('carroceria', filtros.carroceria)
+  // "SUV" e familia: o atalho SUVs do catalogo tambem traz os SUV medio,
+  // senao o carro cadastrado como medio some justo do botao mais clicado.
+  if (filtros.carroceria === 'SUV') q = q.in('carroceria', ['SUV', 'SUV médio'])
+  else if (filtros.carroceria) q = q.eq('carroceria', filtros.carroceria)
   if (filtros.precoMin) q = q.gte('preco_centavos', filtros.precoMin)
   if (filtros.precoMax) q = q.lte('preco_centavos', filtros.precoMax)
   if (filtros.anoMin) q = q.gte('ano_modelo', filtros.anoMin)
@@ -384,7 +387,7 @@ export async function buscarConfig(): Promise<MapaConfig> {
 }
 
 /** URL pública de um arquivo do Storage. */
-export function urlDaFoto(path: string, bucket: 'veiculos' | 'banners' = 'veiculos'): string {
+export function urlDaFoto(path: string, bucket: 'veiculos' | 'banners' | 'clientes' = 'veiculos'): string {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL
   return `${base}/storage/v1/object/public/${bucket}/${path}`
 }
