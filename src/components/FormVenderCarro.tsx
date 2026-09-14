@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CampoMarca } from '@/components/CampoMarca'
+import { JanelaContato } from '@/components/JanelaContato'
 import { OPCOES_VENDA, opcaoDe, type Intencao } from '@/lib/venda'
 
 /**
@@ -20,19 +21,19 @@ import { OPCOES_VENDA, opcaoDe, type Intencao } from '@/lib/venda'
  * usado se faz olhando o carro. Prometer numero pela internet e criar
  * expectativa que a loja vai ter que desfazer na frente do cliente.
  *
- * Nao pede WhatsApp: a mensagem sai PELO WhatsApp da pessoa, entao o numero
- * chega junto. Pedir de novo seria pedir duas vezes a mesma coisa.
+ * Nome e WhatsApp nao ficam aqui: o botao abre a janelinha de contato, a mesma
+ * do resto do site, e o contato entra no painel (pedido do Pietro, 2026-09-14).
+ * Antes a pagina nao pedia WhatsApp pra ter menos atrito, e quem desistia na
+ * tela do WhatsApp sumia sem rastro.
  */
 
 const ANO_ATUAL = new Date().getFullYear()
 const ANOS = Array.from({ length: ANO_ATUAL + 1 - 1990 + 1 }, (_, i) => ANO_ATUAL + 1 - i)
 
 export function FormVenderCarro({
-  whatsUrlBase,
   intencao,
   aoMudarIntencao,
 }: {
-  whatsUrlBase: string
   intencao: Intencao
   aoMudarIntencao: (i: Intencao) => void
 }) {
@@ -40,45 +41,35 @@ export function FormVenderCarro({
   const [modelo, setModelo] = useState('')
   const [ano, setAno] = useState('')
   const [km, setKm] = useState('')
-  const [nome, setNome] = useState('')
-  const [enviando, setEnviando] = useState(false)
+  const [janelaAberta, setJanelaAberta] = useState(false)
   const [erro, setErro] = useState('')
 
   const kmFormatado = km ? Number(km.replace(/\D/g, '')).toLocaleString('pt-BR') : ''
   const opcao = opcaoDe(intencao)
 
-  const montarMensagem = () => {
-    // Os dados do carro montados como bloco. O nome só entra na lista se
-    // existir: antes ele virava linha vazia na mensagem quando ficava em
-    // branco, e o vendedor recebia um buraco no meio do texto.
-    const dados = [
-      `*Carro:* ${marca} ${modelo}`.trim(),
-      `*Ano:* ${ano}`,
-      `*Quilometragem:* ${kmFormatado} km`,
-    ]
-    if (nome.trim()) dados.push(`*Meu nome:* ${nome.trim()}`)
+  // Os dados do carro montados como bloco. O nome da pessoa não entra aqui:
+  // ele vem da janelinha de contato e o servidor coloca na abertura.
+  // A primeira e a última linha mudam com a intenção: o vendedor entende o
+  // que a pessoa quer já na notificação, sem precisar abrir e perguntar.
+  const mensagem = [
+    opcao.abertura,
+    '',
+    `*Quero:* ${intencao === 'consignacao' ? 'deixar em consignação' : 'vender agora'}`,
+    `*Carro:* ${marca} ${modelo}`.trim(),
+    `*Ano:* ${ano}`,
+    `*Quilometragem:* ${kmFormatado} km`,
+    '',
+    opcao.fecho,
+  ].join('\n')
 
-    // A primeira e a última linha mudam com a intenção: o vendedor entende o
-    // que a pessoa quer já na notificação, sem precisar abrir e perguntar.
-    return [
-      opcao.abertura,
-      '',
-      `*Quero:* ${intencao === 'consignacao' ? 'deixar em consignação' : 'vender agora'}`,
-      ...dados,
-      '',
-      opcao.fecho,
-    ].join('\n')
-  }
-
-  const enviar = async (e: React.FormEvent) => {
+  const enviar = (e: React.FormEvent) => {
     e.preventDefault()
     if (!marca || !modelo || !ano || !km) {
       setErro('Preencha marca, modelo, ano e quilometragem.')
       return
     }
     setErro('')
-    setEnviando(true)
-    window.location.href = `${whatsUrlBase}${encodeURIComponent(montarMensagem())}`
+    setJanelaAberta(true)
   }
 
   const campo =
@@ -87,6 +78,7 @@ export function FormVenderCarro({
   return (
     // Único bloco claro da página. Num fundo todo preto, o branco puxa o olho
     // sozinho: não precisa de seta nem de "preencha abaixo".
+    <>
     <form
       onSubmit={enviar}
       className="rounded-3xl bg-carta p-6 shadow-[0_24px_60px_-20px_rgb(0_0_0_/_0.9)] lg:p-8"
@@ -185,36 +177,32 @@ export function FormVenderCarro({
         </label>
       </div>
 
-      {/* Sem campo de WhatsApp: a pessoa vai mandar mensagem PELO WhatsApp
-          dela, entao o numero chega junto. Pedir de novo e pedir duas vezes a
-          mesma coisa (decisao do Felipe em 2026-08-30). O nome fica porque
-          entra na mensagem e faz o vendedor abrir a conversa chamando pelo
-          nome. */}
-      <label className="mt-5 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-tinta-fraca">
-          Seu nome <span className="font-normal normal-case">(opcional)</span>
-        </span>
-        <input
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          maxLength={80}
-          placeholder="Como o vendedor deve te chamar"
-          className={campo}
-        />
-      </label>
-
+      {/* Nome e WhatsApp saíram daqui: quem toca no botão abre a janelinha de
+          contato, igual ao resto do site, e o contato entra no painel. */}
       <button
         type="submit"
-        disabled={enviando}
-        className="btn-toque mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-zap px-8 py-4 text-lg font-semibold text-white hover:bg-zap-escuro disabled:opacity-60"
+        aria-haspopup="dialog"
+        className="btn-toque mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-zap px-8 py-4 text-lg font-semibold text-white hover:bg-zap-escuro"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="size-6">
           <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.86 9.86 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.13h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.11.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.25-4.36c0-4.53 3.7-8.23 8.23-8.23 2.2 0 4.26.86 5.82 2.41a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.22-8.24 8.22Z" />
         </svg>
-        {enviando ? 'Abrindo o WhatsApp...' : 'Falar com um vendedor'}
+        Falar com um vendedor
       </button>
 
       <p className="mt-4 text-center text-xs leading-relaxed text-tinta-fraca">{opcao.aviso}</p>
     </form>
+
+    {/* Fora do <form> de cima: formulário dentro de formulário não existe em HTML. */}
+    <JanelaContato
+      aberta={janelaAberta}
+      aoFechar={() => setJanelaAberta(false)}
+      dados={{
+        mensagem,
+        origem: 'vender-meu-carro',
+        titulo: `Falta só o seu contato`,
+      }}
+    />
+    </>
   )
 }

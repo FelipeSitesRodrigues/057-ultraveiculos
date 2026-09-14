@@ -79,6 +79,18 @@ espera_conter "recusa origem inventada" "origem invalida" \
   "$(curl -s "$URL/rpc/registrar_lead" "${H[@]}" -d '{"p_nome":"Fulano de Teste","p_telefone":"11981404811","p_origem":"hack"}')"
 
 echo
+echo "Janelinha de contato (registrar_contato, desde 2026-09-14):"
+# So casos recusados: o caso valido gravaria contato e mexeria no rodizio real.
+espera_conter "recusa nome curto" "nome invalido" \
+  "$(curl -s "$URL/rpc/registrar_contato" "${H[@]}" -d '{"p_nome":"A","p_telefone":"11981404811"}')"
+espera_conter "recusa telefone sem DDD" "telefone invalido" \
+  "$(curl -s "$URL/rpc/registrar_contato" "${H[@]}" -d '{"p_nome":"Fulano de Teste","p_telefone":"981404811"}')"
+espera_conter "recusa origem inventada" "origem invalida" \
+  "$(curl -s "$URL/rpc/registrar_contato" "${H[@]}" -d '{"p_nome":"Fulano de Teste","p_telefone":"11981404811","p_origem":"hack"}')"
+espera_conter "visitante continua sem ler contatos" "permission denied" \
+  "$(curl -s "$URL/leads?select=nome,telefone,vendedor_id" "${H[@]}")"
+
+echo
 echo "Leitura publica que DEVE funcionar:"
 espera_conter "config publica da loja e legivel" "Benjamin Constant" \
   "$(curl -s "$URL/config?select=*&chave=eq.loja" "${H[@]}")"

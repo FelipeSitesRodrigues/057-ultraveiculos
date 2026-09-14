@@ -44,7 +44,7 @@ function IconeTroca() {
   )
 }
 
-export function VendaSeuCarro({ whatsUrlBase }: { whatsUrlBase: string }) {
+export function VendaSeuCarro() {
   const [intencao, setIntencao] = useState<Intencao>('venda')
   const opcao = opcaoDe(intencao)
 
@@ -142,7 +142,6 @@ export function VendaSeuCarro({ whatsUrlBase }: { whatsUrlBase: string }) {
           </div>
 
           <FormVenderCarro
-            whatsUrlBase={whatsUrlBase}
             intencao={intencao}
             aoMudarIntencao={setIntencao}
           />

@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import type { Vendedor } from '@/types/database'
-import { linkWhatsApp } from '@/lib/site'
+import type { OrigemContato } from '@/lib/site'
+import { JanelaContato } from '@/components/JanelaContato'
 
 export function IconeWhats({ className = 'size-5' }: { className?: string }) {
   return (
@@ -21,18 +23,21 @@ type Props = {
   rotulo?: string
   className?: string
   classeWrapper?: string
+  origem?: OrigemContato
+  veiculoId?: string
+  /** Título da janelinha de contato. */
+  tituloJanela?: string
 }
 
 /**
  * Botao de WhatsApp.
  *
- * Sem vendedor definido, o link aponta pra rota /atendimento, que escolhe na
- * hora do clique quem esta na vez do rodizio. Antes isso abria um menu pedindo
- * pra pessoa escolher entre Adenilson e Solon: uma pergunta que o visitante nao
- * tem como responder e que so atrasa o contato.
+ * Abre a janelinha de nome e WhatsApp (JanelaContato), que envia pra rota
+ * /atendimento. La o contato e gravado pro painel e o vendedor e escolhido:
+ * o responsavel pelo carro quando existe, senao o da vez no rodizio.
  *
- * Com vendedor definido (carro com responsavel), vai direto pra ele e nao
- * entra no rodizio.
+ * Antes isso abria um menu pedindo pra pessoa escolher entre Adenilson e
+ * Solon: uma pergunta que o visitante nao tem como responder.
  */
 export function BotaoWhats({
   vendedores,
@@ -41,28 +46,70 @@ export function BotaoWhats({
   rotulo = 'Falar no WhatsApp',
   className = '',
   classeWrapper = '',
+  origem = 'site',
+  veiculoId,
+  tituloJanela,
 }: Props) {
+  const [aberta, setAberta] = useState(false)
   const base =
     'inline-flex w-full items-center justify-center gap-2 rounded-full bg-zap px-6 py-3 font-semibold text-white hover:bg-zap-escuro'
 
   // Sem ninguém cadastrado não há pra onde mandar.
   if (!vendedor && (!vendedores || vendedores.length === 0)) return null
 
-  const href = vendedor
-    ? linkWhatsApp(vendedor.whatsapp, mensagem)
-    : `/atendimento?msg=${encodeURIComponent(mensagem)}`
-
   return (
     <div className={`relative ${classeWrapper}`}>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        type="button"
+        onClick={() => setAberta(true)}
+        aria-haspopup="dialog"
         className={`${base} ${className}`}
       >
         <IconeWhats />
         {rotulo}
-      </a>
+      </button>
+      <JanelaContato
+        aberta={aberta}
+        aoFechar={() => setAberta(false)}
+        dados={{
+          mensagem,
+          origem,
+          veiculoId,
+          vendedorId: vendedor?.id,
+          titulo: tituloJanela ?? (vendedor ? `Falar com ${vendedor.nome}` : undefined),
+        }}
+      />
     </div>
+  )
+}
+
+/** Link "WhatsApp Solon" do rodapé: a pessoa escolheu o vendedor, então não há rodízio. */
+export function LinkWhatsVendedor({
+  vendedor,
+  mensagem,
+  className = '',
+}: {
+  vendedor: Vendedor
+  mensagem: string
+  className?: string
+}) {
+  const [aberta, setAberta] = useState(false)
+  return (
+    <>
+      <button type="button" onClick={() => setAberta(true)} aria-haspopup="dialog" className={className}>
+        <IconeWhats className="size-4 text-zap" />
+        WhatsApp {vendedor.nome}
+      </button>
+      <JanelaContato
+        aberta={aberta}
+        aoFechar={() => setAberta(false)}
+        dados={{
+          mensagem,
+          origem: 'site',
+          vendedorId: vendedor.id,
+          titulo: `Falar com ${vendedor.nome}`,
+        }}
+      />
+    </>
   )
 }

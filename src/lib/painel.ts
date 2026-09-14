@@ -89,12 +89,15 @@ export async function listarVendedoresPainel(): Promise<Vendedor[]> {
 
 export async function listarLeads(): Promise<Lead[]> {
   const sb = await criarClienteServidor()
-  const { data } = await sb
+  const { data, error } = await sb
     .from('leads')
-    .select('id, nome, telefone, mensagem, veiculo_id, origem, atendido, criado_em')
+    .select(
+      'id, nome, telefone, mensagem, veiculo_id, vendedor_id, origem, atendido, criado_em, veiculos(marca, modelo, versao, ano_modelo, slug, status), vendedores(nome)',
+    )
     .order('criado_em', { ascending: false })
     .limit(200)
-  return (data ?? []) as Lead[]
+  if (error) console.error('listarLeads', error.message)
+  return (data ?? []) as unknown as Lead[]
 }
 
 export type Resumo = {

@@ -121,9 +121,19 @@ export type Lead = {
   telefone: string
   mensagem: string
   veiculo_id: string | null
+  vendedor_id: string | null
   origem: OrigemLead
   atendido: boolean
   criado_em: string
+  veiculos?: {
+    marca: string
+    modelo: string
+    versao: string
+    ano_modelo: number | null
+    slug: string
+    status: string
+  } | null
+  vendedores?: { nome: string } | null
 }
 
 export type Perfil = {

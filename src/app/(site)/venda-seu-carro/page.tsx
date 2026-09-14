@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { VendaSeuCarro } from '@/components/VendaSeuCarro'
-import { buscarVendedores } from '@/lib/dados'
 import { SITE } from '@/lib/site'
 
 export const revalidate = 3600
@@ -14,14 +13,11 @@ export const metadata: Metadata = {
 /**
  * A pagina tem dois caminhos (vender e consignar) e a escolha entre eles muda
  * quase todo o texto, entao o conteudo vive num componente de cliente. Aqui
- * fica so o que precisa do servidor: os metadados e o vendedor da vez.
+ * fica so o que precisa do servidor: os metadados.
+ *
+ * O contato entra no rodizio: a rota /atendimento escolhe o vendedor da vez
+ * no momento do envio.
  */
-export default async function PaginaVendaSeuCarro() {
-  const vendedores = await buscarVendedores()
-
-  // O contato entra no rodízio: a rota /atendimento escolhe o vendedor da vez
-  // no momento do clique.
-  const base = vendedores.length > 0 ? '/atendimento?msg=' : ''
-
-  return <VendaSeuCarro whatsUrlBase={base} />
+export default function PaginaVendaSeuCarro() {
+  return <VendaSeuCarro />
 }

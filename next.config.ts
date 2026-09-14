@@ -44,7 +44,11 @@ const csp = [
   "frame-src 'self' https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // O formulario de contato posta em /atendimento, que redireciona pro
+  // WhatsApp. O Chrome aplica form-action tambem ao redirecionamento, entao
+  // sem o WhatsApp aqui o envio morre calado depois de gravar o contato.
+  // wa.me responde com outro redirecionamento pra api.whatsapp.com.
+  "form-action 'self' https://wa.me https://api.whatsapp.com",
   "frame-ancestors 'none'",
   'upgrade-insecure-requests',
 ].join('; ')

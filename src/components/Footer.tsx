@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Vendedor } from '@/types/database'
-import { ROTAS, linkWhatsApp, MENSAGEM_GERAL } from '@/lib/site'
-import { IconeWhats } from '@/components/BotaoWhats'
+import { ROTAS, MENSAGEM_GERAL } from '@/lib/site'
+import { LinkWhatsVendedor } from '@/components/BotaoWhats'
 import type { ConfigFinanciamento, ConfigGoogle, ConfigHorario, ConfigLoja } from '@/lib/dados'
 
 type Props = {
@@ -68,15 +68,11 @@ export function Footer({ config, vendedores }: Props) {
               </li>
               {vendedores.map((v) => (
                 <li key={v.id}>
-                  <a
-                    href={linkWhatsApp(v.whatsapp, MENSAGEM_GERAL)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <LinkWhatsVendedor
+                    vendedor={v}
+                    mensagem={MENSAGEM_GERAL}
                     className="inline-flex items-center gap-2 text-gelo transition hover:text-zap"
-                  >
-                    <IconeWhats className="size-4 text-zap" />
-                    WhatsApp {v.nome}
-                  </a>
+                  />
                 </li>
               ))}
             </ul>

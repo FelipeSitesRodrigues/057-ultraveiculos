@@ -4,12 +4,13 @@ import { useMemo, useState } from 'react'
 import { calcularParcela } from '@/lib/parcela'
 import { reais, reaisExatos } from '@/lib/formato'
 import type { ConfigFinanciamento } from '@/lib/dados'
+import { JanelaContato, type DadosContato } from '@/components/JanelaContato'
 
 type Props = {
   precoCentavos: number
   cfg: ConfigFinanciamento
-  /** Link de WhatsApp já montado, pra pessoa sair daqui falando com vendedor. */
-  linkWhats?: string
+  /** Contato pra pessoa sair daqui falando com vendedor, pela janelinha de nome e WhatsApp. */
+  contato?: DadosContato
 }
 
 /**
@@ -19,7 +20,8 @@ type Props = {
  * O aviso embaixo nao e enfeite juridico. Parcela publicada sem ele passa a
  * ser oferta de credito, que e atividade regulada.
  */
-export function SimuladorParcela({ precoCentavos, cfg, linkWhats }: Props) {
+export function SimuladorParcela({ precoCentavos, cfg, contato }: Props) {
+  const [janelaAberta, setJanelaAberta] = useState(false)
   const entradaMinima = Math.round(precoCentavos * cfg.entrada_min_pct)
   const [entrada, setEntrada] = useState(entradaMinima)
   const [prazo, setPrazo] = useState(cfg.prazo_padrao)
@@ -118,15 +120,22 @@ export function SimuladorParcela({ precoCentavos, cfg, linkWhats }: Props) {
         </dl>
       </div>
 
-      {linkWhats && (
-        <a
-          href={linkWhats}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-toque mt-5 flex w-full items-center justify-center rounded-full bg-zap px-6 py-3.5 font-semibold text-white hover:bg-zap-escuro"
-        >
-          Enviar essa simulação no WhatsApp
-        </a>
+      {contato && (
+        <>
+          <button
+            type="button"
+            onClick={() => setJanelaAberta(true)}
+            aria-haspopup="dialog"
+            className="btn-toque mt-5 flex w-full items-center justify-center rounded-full bg-zap px-6 py-3.5 font-semibold text-white hover:bg-zap-escuro"
+          >
+            Enviar essa simulação no WhatsApp
+          </button>
+          <JanelaContato
+            aberta={janelaAberta}
+            aoFechar={() => setJanelaAberta(false)}
+            dados={contato}
+          />
+        </>
       )}
 
       <p className="mt-4 text-xs leading-relaxed text-tinta-fraca">{cfg.aviso}</p>

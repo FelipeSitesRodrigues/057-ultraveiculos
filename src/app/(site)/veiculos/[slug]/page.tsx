@@ -14,7 +14,7 @@ import {
   capa,
 } from '@/lib/dados'
 import { ano, km, reais, tituloVeiculo } from '@/lib/formato'
-import { linkWhatsApp, mensagemVeiculo, SITE } from '@/lib/site'
+import { mensagemVeiculo, SITE } from '@/lib/site'
 
 export const revalidate = 300
 
@@ -68,16 +68,21 @@ export default async function PaginaVeiculo({ params }: PageProps<'/veiculos/[sl
   const preco = reais(v.preco_centavos)
   const mensagem = mensagemVeiculo(titulo, preco)
 
-  // Vendedor responsavel pelo carro. Sem responsavel, a escolha fica com a
-  // pessoa, que e melhor do que mandar todo mundo pro mesmo numero.
+  // Vendedor responsavel pelo carro. Com responsavel, o contato vai direto pra
+  // ele. Sem responsavel, entra no rodizio, decidido na hora do envio pela rota
+  // /atendimento. Os dois botoes passam pela janelinha de nome e WhatsApp, e o
+  // id do carro vai junto pro painel mostrar sobre qual carro foi.
   const responsavel = vendedores.find((x) => x.id === v.vendedor_id)
-  // Com responsavel, o contato vai direto pra ele. Sem responsavel, entra no
-  // rodizio pela rota /atendimento, que decide na hora do clique.
   const msgSimulacao = `Olá! Simulei o financiamento do *${titulo}* (${preco}) no site e quero falar com um vendedor.`
-  const linkSimulacao = responsavel
-    ? linkWhatsApp(responsavel.whatsapp, msgSimulacao)
-    : vendedores.length > 0
-      ? `/atendimento?msg=${encodeURIComponent(msgSimulacao)}`
+  const contatoSimulacao =
+    responsavel || vendedores.length > 0
+      ? {
+          mensagem: msgSimulacao,
+          origem: 'financiamento' as const,
+          veiculoId: v.id,
+          vendedorId: responsavel?.id,
+          titulo: 'Enviar a simulação',
+        }
       : undefined
 
   const ficha = Object.entries(v.ficha ?? {})
@@ -135,6 +140,9 @@ export default async function PaginaVeiculo({ params }: PageProps<'/veiculos/[sl
                   vendedor={responsavel}
                   vendedores={vendedores}
                   mensagem={mensagem}
+                  origem="veiculo"
+                  veiculoId={v.id}
+                  tituloJanela={`Falar sobre o ${titulo}`}
                   rotulo={responsavel ? `Falar com ${responsavel.nome}` : 'Falar com um vendedor'}
                   className="btn-toque py-4"
                   classeWrapper="w-full"
@@ -166,7 +174,7 @@ export default async function PaginaVeiculo({ params }: PageProps<'/veiculos/[sl
               <SimuladorParcela
                 precoCentavos={v.preco_centavos}
                 cfg={config.financiamento}
-                linkWhats={linkSimulacao}
+                contato={contatoSimulacao}
               />
             </div>
           </div>
