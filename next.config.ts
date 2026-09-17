@@ -55,6 +55,15 @@ const csp = [
 
 const nextConfig: NextConfig = {
   images: {
+    // A Vercel NAO redimensiona imagem neste projeto. O plano Hobby da 5 mil
+    // transformacoes por mes; em 2026-09-17 a cota estourou e a Vercel passou a
+    // responder 402 em toda variacao fora do cache, entao as fotos dos carros
+    // sumiram do site no ar. Cada foto vira ate 8 larguras x 2 formatos, e o
+    // cache vence a cada 4 horas: um estoque de ~40 carros nao cabe na cota.
+    // O peso e resolvido na origem: foto de carro e cliente ja sobe reduzida
+    // pelo painel (`imagem-navegador.ts`) e as artes de /public/img tem versao
+    // AVIF servida por <picture>. Remover esta linha so com plano pago.
+    unoptimized: true,
     // Fotos de veiculo e banner vem do Storage do Supabase.
     remotePatterns: [
       {

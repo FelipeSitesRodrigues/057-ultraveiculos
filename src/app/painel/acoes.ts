@@ -225,7 +225,8 @@ export async function salvarVeiculo(
  * Sem isso, daria pra mandar um caminho inventado e apontar o carro pra
  * qualquer objeto do bucket.
  */
-const CAMINHO_VALIDO = /^lote\/[0-9a-f-]{36}\/\d{10,}-[a-z0-9]{4,10}\.webp$/
+// .jpg e o formato que o Safari gera (ver lib/imagem-navegador.ts)
+const CAMINHO_VALIDO = /^lote\/[0-9a-f-]{36}\/\d{10,}-[a-z0-9]{4,10}\.(webp|jpg)$/
 
 async function registrarFotos(veiculoId: string, cru: string): Promise<string | null> {
   if (!cru) return null
@@ -410,7 +411,7 @@ export async function sair() {
   redirect('/entrar')
 }
 
-const CAMINHO_BANNER = /^banner\/\d{10,}-[a-z0-9]{4,10}\.webp$/
+const CAMINHO_BANNER = /^banner\/\d{10,}-[a-z0-9]{4,10}\.(webp|jpg)$/
 
 /**
  * Salva o banner do topo do catalogo.
@@ -474,7 +475,7 @@ function atualizaFotosClientes() {
 // So aceita o formato que o proprio painel gera. Impede que alguem com sessao
 // aponte a linha pra arquivo de outro bucket ou pra fora da pasta.
 const EsquemaCaminhosCliente = z
-  .array(z.string().regex(/^painel\/[\w-]+\.webp$/))
+  .array(z.string().regex(/^painel\/[\w-]+\.(webp|jpg)$/))
   .min(1)
   .max(30)
 

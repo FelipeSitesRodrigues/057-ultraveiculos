@@ -41,11 +41,11 @@ export function EnviarFotosClientes() {
 
     for (const arquivo of arquivos) {
       try {
-        const blob = await prepararImagem(arquivo, LARGURA_MAX, ALTURA_MAX)
-        const caminho = `painel/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`
+        const { blob, extensao } = await prepararImagem(arquivo, LARGURA_MAX, ALTURA_MAX)
+        const caminho = `painel/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`
         const { error } = await sb.storage
           .from('clientes')
-          .upload(caminho, blob, { contentType: 'image/webp', upsert: false })
+          .upload(caminho, blob, { contentType: blob.type, upsert: false })
         if (error) throw error
         caminhos.push(caminho)
       } catch {

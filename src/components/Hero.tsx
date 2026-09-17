@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import Link from 'next/link'
+import { ArteDeFundo } from '@/components/ArteDeFundo'
 import type { Vendedor } from '@/types/database'
 import { BotaoWhats } from '@/components/BotaoWhats'
 import { MENSAGEM_GERAL } from '@/lib/site'
@@ -17,23 +17,10 @@ export function Hero({ vendedores }: { vendedores: Vendedor[] }) {
     <section className="corte-raio relative isolate flex min-h-[88svh] items-end overflow-hidden bg-escuro lg:min-h-[680px] lg:items-center">
       {/* Fundo */}
       <div aria-hidden className="absolute inset-0 -z-10">
-        <Image
-          src="/img/hero-mobile.webp"
-          alt=""
-          fill
-          priority
-          quality={90}
-          sizes="(max-width: 1023px) 100vw, 1px"
-          className="object-cover object-center lg:hidden"
-        />
-        <Image
-          src="/img/hero-desktop.webp"
-          alt=""
-          fill
-          priority
-          quality={90}
-          sizes="(min-width: 1024px) 100vw, 1px"
-          className="hidden object-cover object-[center_45%] lg:block"
+        <ArteDeFundo
+          celular="/img/hero-mobile"
+          desktop="/img/hero-desktop"
+          className="object-center lg:object-[center_45%]"
         />
         {/* Veu: no celular escurece de baixo pra cima, que e onde o texto
             pousa. No desktop escurece da esquerda pra direita. */}

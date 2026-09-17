@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
+import { ArteDeFundo } from '@/components/ArteDeFundo'
 import { EscolhaVenda } from '@/components/EscolhaVenda'
 import { FormVenderCarro } from '@/components/FormVenderCarro'
 import { opcaoDe, type Intencao } from '@/lib/venda'
@@ -64,23 +64,10 @@ export function VendaSeuCarro() {
       {/* A ESCOLHA, antes de qualquer outra coisa. */}
       <section className="relative isolate overflow-hidden">
         <div aria-hidden className="absolute inset-0 -z-10">
-          <Image
-            src="/img/vender-mobile.webp"
-            alt=""
-            fill
-            priority
-            quality={90}
-            sizes="(max-width: 1023px) 100vw, 1px"
-            className="object-cover object-[68%_top] lg:hidden"
-          />
-          <Image
-            src="/img/vender-desktop.webp"
-            alt=""
-            fill
-            priority
-            quality={90}
-            sizes="(min-width: 1024px) 100vw, 1px"
-            className="hidden object-cover object-right-top lg:block"
+          <ArteDeFundo
+            celular="/img/vender-mobile"
+            desktop="/img/vender-desktop"
+            className="object-[68%_top] lg:object-right-top"
           />
           {/* Véu. O bloco de escolha ocupa a largura inteira e passa por cima
               do carro, então os painéis é que garantem a leitura do texto (têm

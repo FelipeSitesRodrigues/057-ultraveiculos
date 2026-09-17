@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { salvarBanner, type EstadoForm } from '@/app/painel/acoes'
+import { prepararImagem } from '@/lib/imagem-navegador'
 import { criarClienteNavegador } from '@/lib/supabase/navegador'
 import type { Banner } from '@/types/database'
 
@@ -26,24 +27,13 @@ export function FormBanner({ banner }: { banner: Banner | null }) {
     setPrevia(URL.createObjectURL(arquivo))
 
     try {
-      const bitmap = await createImageBitmap(arquivo)
       // Banner e faixa larga: 2400px de largura cobre tela grande sem exagero.
-      const escala = Math.min(1, 2400 / bitmap.width)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(bitmap.width * escala)
-      canvas.height = Math.round(bitmap.height * escala)
-      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-      bitmap.close()
+      const { blob, extensao } = await prepararImagem(arquivo, 2400, Infinity, 0.9)
 
-      const blob = await new Promise<Blob | null>((r) =>
-        canvas.toBlob(r, 'image/webp', 0.9),
-      )
-      if (!blob) throw new Error('não consegui converter')
-
-      const nome = `banner/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`
+      const nome = `banner/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`
       const { error } = await criarClienteNavegador()
         .storage.from('banners')
-        .upload(nome, blob, { contentType: 'image/webp' })
+        .upload(nome, blob, { contentType: blob.type })
       if (error) throw error
 
       setCaminho(nome)
